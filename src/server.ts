@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pino from 'pino';
+require("./telemetry");
 
 import { loadConfig } from './settings.js';
 import { simulateLatency } from './utils.js';
