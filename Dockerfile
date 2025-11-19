@@ -1,12 +1,20 @@
 FROM node:18-alpine
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
 COPY package*.json ./
+COPY tsconfig.json ./
+
 RUN npm install
 
-COPY dist ./dist
+COPY src ./src
 
-EXPOSE 8080
+# Compila o TypeScript — gera dist/
+RUN npm run build
 
-CMD ["node", "dist/server.js"]
+# Agora copiamos manualmente o telemetry.cjs para o dist/
+COPY src/telemetry.cjs dist/telemetry.cjs
+
+EXPOSE 3001
+
+CMD ["npm", "start"]

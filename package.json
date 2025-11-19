@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx --watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node --require ./dist/telemetry.cjs ./dist/server.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "@opentelemetry/instrumentation-express": "^0.57.0",
     "@opentelemetry/instrumentation-http": "^0.208.0",
     "@opentelemetry/sdk-node": "^0.208.0",
+    "axios": "^1.13.2",
     "express": "^4.21.2",
     "pino": "^9.14.0",
     "prom-client": "^15.1.3"

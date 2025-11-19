@@ -1,6 +1,7 @@
+import "./telemetry.cjs";
+
 import express, { Request, Response } from 'express';
 import pino from 'pino';
-import "./telemetry.js"; // Importa OpenTelemetry
 import { loadConfig } from './settings.js';
 import { simulateLatency } from './utils.js';
 import { trace } from '@opentelemetry/api';
