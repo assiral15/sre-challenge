@@ -1,11 +1,22 @@
 import express, { Request, Response } from 'express';
 import pino from 'pino';
-require("./telemetry");
-
+import "./telemetry.js"; // Importa OpenTelemetry
 import { loadConfig } from './settings.js';
 import { simulateLatency } from './utils.js';
+import { trace } from '@opentelemetry/api';
+import client from 'prom-client';
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
+
+// Pagamentos em memória
+let payments: any[] = [];
+
+// Prometheus metrics
+const register = client.register;
+const paymentsCreated = new client.Counter({
+  name: 'payments_created_total',
+  help: 'Total payments created',
+});
 
 export async function createApp() {
   const app = express();
@@ -13,62 +24,79 @@ export async function createApp() {
 
   app.use(express.json());
 
+  // Health check
   app.get('/healthz', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok', service: 'sre-hous3-challenge' });
   });
 
+  // Orders com latência simulada
   app.get('/api/v1/orders', async (_req: Request, res: Response) => {
     const items = await simulateLatency('orders');
     res.json({ data: items, meta: { total: items.length } });
   });
 
+  // Buscar pagamento pelo id
   app.get('/api/v1/payments/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const payments = await simulateLatency('payments');
-    const payment = payments.find((item) => item.id === id);
+    const payment = payments.find((p) => p.id === id);
 
     if (!payment) {
-      res.status(404).json({ message: 'Payment not found' });
-      return;
+      return res.status(404).json({ message: 'Payment not found' });
     }
 
     res.json({ data: payment });
   });
 
+  // Criar pagamento
   app.post('/api/v1/payments', async (req: Request, res: Response) => {
     const payload = req.body;
 
     if (!payload?.orderId || !payload?.amount) {
-      res.status(400).json({ message: 'Invalid payload' });
-      return;
+      return res.status(400).json({ message: 'Invalid payload' });
     }
 
-    const payments = await simulateLatency('payments');
-    const existing = payments.find((payment) => payment.orderId === payload.orderId);
-
+    const existing = payments.find((p) => p.orderId === payload.orderId);
     if (existing) {
-      res.status(409).json({ message: 'Payment already processed' });
-      return;
+      return res.status(409).json({ message: 'Payment already processed' });
     }
 
-    // Ao instrumentar a aplicação, este evento deve gerar métricas e traces úteis
+    // Tracing OpenTelemetry
+    const tracer = trace.getTracer('payments-service');
+    const span = tracer.startSpan('create_payment');
+    span.setAttribute('orderId', payload.orderId);
+    span.setAttribute('amount', payload.amount);
+
+    // Criar pagamento
     const newPayment = { id: `pay_${Date.now()}`, ...payload };
+    payments.push(newPayment);
+
+    // Logs Pino + Prometheus
     logger.info({ payment: newPayment }, 'payment processed');
+    paymentsCreated.inc();
+
+    span.end();
 
     res.status(201).json({ data: newPayment });
   });
 
-  app.use((err: Error, _req: Request, res: Response) => {
+  // Endpoint métricas Prometheus
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
+
+  // Middleware de erro
+  app.use((err: Error, _req: Request, res: Response, _next: express.NextFunction) => {
     logger.error({ err }, 'unhandled error');
     res.status(500).json({ message: 'Internal server error' });
   });
- 
+
   return { app, config };
 }
 
+// Inicializa o servidor
 async function start() {
   const { app, config } = await createApp();
-
   app.listen(config.port, () => {
     logger.info({ port: config.port }, 'server started');
   });
@@ -80,6 +108,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   });
 }
-
-// TODO: Instrumentar com OpenTelemetry (traces, métricas, logs estruturados)
-

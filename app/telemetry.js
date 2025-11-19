@@ -5,20 +5,23 @@ const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
 
 const traceExporter = new OTLPTraceExporter({
-  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + "/v1/traces",
+  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
 });
 
 const metricsExporter = new OTLPMetricExporter({
-  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + "/v1/metrics",
+  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/metrics',
 });
 
 const sdk = new NodeSDK({
   traceExporter,
   metricExporter: metricsExporter,
+  serviceName: 'payments-service', // ⚡ aqui define o nome do serviço
   instrumentations: [
     new HttpInstrumentation(),
     new ExpressInstrumentation(),
   ],
 });
 
-sdk.start();
+sdk.start()
+  .then(() => console.log('OTEL SDK started'))
+  .catch((err) => console.error('Error starting OTEL SDK', err));

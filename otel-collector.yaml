@@ -1,34 +1,27 @@
 receivers:
   otlp:
     protocols:
-      http:
       grpc:
+      http:
 
 exporters:
   prometheus:
-    endpoint: "0.0.0.0:8888"
+    endpoint: "0.0.0.0:8888"  # isso é interno no container, mapeado para 8889
+  logging:  # opcional, só pra debug
+    loglevel: debug
+  otlp/jaeger:
+    endpoint: "jaeger:14250"
 
-  jaeger:
-    endpoint: jaeger:14250
-    tls:
-      insecure: true
-
-  loki:
-    endpoint: http://loki:3100/loki/api/v1/push
-
-  logging:
-    loglevel: info
+processors:
+  batch:
 
 service:
   pipelines:
-    traces:
-      receivers: [otlp]
-      exporters: [jaeger, logging]
-
     metrics:
       receivers: [otlp]
-      exporters: [prometheus]
-
-    logs:
+      processors: [batch]
+      exporters: [prometheus, logging]
+    traces:
       receivers: [otlp]
-      exporters: [loki]
+      processors: [batch]
+      exporters: [otlp/jaeger]
