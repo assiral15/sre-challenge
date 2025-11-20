@@ -1,71 +1,96 @@
+version: "3.9"
+
 services:
-  api:
-    build: .
-    container_name: payments-api
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    user: root
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml
+      - ./loki/index:/loki/index
+      - ./loki/chunks:/loki/chunks
+      - ./loki/wal:/wal
     ports:
-      - "3001:3000"
-    environment:
-      - NODE_ENV=production
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
-      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-collector:4318/v1/metrics
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=payments-service
-    depends_on:
-      - otel-collector
+      - "3100:3100"
     networks:
       - otel-net
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
     volumes:
-      - ./otel-collector.yaml:/etc/otel-collector.yaml
-    command: ["--config=/etc/otel-collector.yaml"]
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "8889:8889"
+      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail.yaml
     networks:
       - otel-net
     depends_on:
-      - jaeger
-      - prometheus
-    restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - otel-net
+      - loki
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    ports:
-      - "3000:3000"
-    networks:
-      - otel-net
-    depends_on:
-      - prometheus
-      - jaeger
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - otel-net
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - otel-net
+
+  api:
+    build: .
+    container_name: api-payments
+    environment:
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    working_dir: /app
+    command: npm start
+    networks:
+      - otel-net
+  
   jaeger:
     image: jaegertracing/all-in-one:1.48
     container_name: jaeger
     ports:
-      - "16686:16686"
-      - "14250:14250"
-      - "14268:14268"
+      - "16686:16686"   # UI
+      - "14250:14250"   # gRPC ingest
+      - "14268:14268"   # HTTP ingest
     networks:
       - otel-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.88.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC (traces)
+      - "4318:4318"   # OTLP HTTP (metrics/traces/logs)
+    networks:
+      - otel-net
+
 
 networks:
   otel-net:
     driver: bridge
+
+volumes:
+  grafana-data:

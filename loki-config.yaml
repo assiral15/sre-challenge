@@ -1,17 +1,18 @@
 auth_enabled: false
+
 server:
   http_listen_port: 3100
+
 ingester:
   lifecycler:
-    address: 127.0.0.1
     ring:
       kvstore:
         store: inmemory
       replication_factor: 1
   chunk_idle_period: 5m
-  max_chunk_age: 1h
-  chunk_target_size: 1048576
+  chunk_retain_period: 30s
   max_transfer_retries: 0
+
 schema_config:
   configs:
     - from: 2020-10-24
@@ -21,8 +22,14 @@ schema_config:
       index:
         prefix: index_
         period: 168h
+
 storage_config:
   boltdb:
-    directory: /tmp/loki/index
+    directory: /loki/index
   filesystem:
-    directory: /tmp/loki/chunks
+    directory: /loki/chunks
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h

@@ -1,0 +1,26 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  logging:
+    verbosity: Detailed
+
+  jaeger:
+    endpoint: http://jaeger:14268/api/traces
+    insecure: true
+
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [jaeger, logging]
+
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
