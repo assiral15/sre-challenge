@@ -12,15 +12,12 @@ import { simulateLatency } from './utils.js';
 import { trace } from '@opentelemetry/api';
 import client from 'prom-client';
 
-// ========== LOGGER ==========
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 
   client.collectDefaultMetrics({
     labels: { service: 'payments-api' },
 });
 
-
-// ========== MÉTRICAS ==========
 const register = client.register;
 
 const paymentsCreated = new client.Counter({
@@ -41,20 +38,15 @@ const httpErrorsTotal = new client.Counter({
   labelNames: ['route', 'method', 'status_code'],
 });
 
-// Fake database
 let payments: any[] = [];
 
 
-// ======================================================
-//                     APLICACÃO
-// ======================================================
 export async function createApp() {
   const app = express();
   const config = loadConfig();
 
   app.use(express.json());
 
-  // ===== Middleware de Métricas =====
   app.use((req: Request, res: Response, next: NextFunction) => {
     const start = process.hrtime.bigint();
 
@@ -81,7 +73,6 @@ export async function createApp() {
     next();
   });
 
-  // ===== HEALTH =====
   app.get('/healthz', (_req: Request, res: Response) => {
     res.status(200).json({
       status: 'ok',
@@ -89,20 +80,17 @@ export async function createApp() {
     });
   });
 
-  // ===== ORDERS =====
   app.get('/api/v1/orders', async (_req: Request, res: Response) => {
     const items = await simulateLatency('orders');
     res.json({ data: items, meta: { total: items.length } });
   });
 
-  // ===== GET PAYMENTS =====
   app.get('/api/v1/payments/:id', (req: Request, res: Response) => {
     const payment = payments.find((p) => p.id === req.params.id);
     if (!payment) return res.status(404).json({ message: 'Payment not found' });
     res.json({ data: payment });
   });
 
-  // ===== CREATE PAYMENT =====
   app.post('/api/v1/payments', async (req: Request, res: Response) => {
     const payload = req.body;
 
@@ -115,7 +103,6 @@ export async function createApp() {
       return res.status(409).json({ message: 'Payment already processed' });
     }
 
-    // ===== Tracing =====
     const tracer = trace.getTracer('payments-service');
     const span = tracer.startSpan('create_payment');
 
@@ -137,13 +124,11 @@ export async function createApp() {
     res.status(201).json({ data: newPayment });
   });
 
-  // ===== METRICS =====
   app.get('/metrics', async (_req: Request, res: Response) => {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   });
 
-  // ===== ERROR HANDLER =====
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     logger.error({ err }, 'unhandled error');
     res.status(500).json({ message: 'Internal server error' });
@@ -152,10 +137,6 @@ export async function createApp() {
   return { app, config };
 }
 
-
-// ======================================================
-//                  START SERVER
-// ======================================================
 async function start() {
   const { app, config } = await createApp();
 
