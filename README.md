@@ -1,10 +1,10 @@
-# 📘 **Desafio Técnico – Stack de Observabilidade Completa (Prometheus, Grafana, OTEL, Jaeger, Loki)**
+ **Desafio Técnico – Stack de Observabilidade**
 
-### Autora: **Larissa Novais (Analista de Cloud / SRE)**
+ Autora: **Larissa Novais (Analista de Cloud / SRE)**
 
 ---
 
-# 📍 **1. Introdução**
+#  **1. Introdução**
 
 Este projeto implementa uma **stack completa de observabilidade** para uma API de pagamentos simulada, incluindo:
 
@@ -18,7 +18,7 @@ O objetivo foi demonstrar **instrumentação real de um serviço**, correlaciona
 
 ---
 
-# 📍 **2. Arquitetura da Solução**
+# **2. Arquitetura da Solução**
 
 A stack final ficou estruturada assim:
 
@@ -37,7 +37,7 @@ Grafana → dashboards (metrics + logs + traces)
 
 ---
 
-# 📍 **3. Tecnologias Utilizadas**
+#  **3. Tecnologias Utilizadas**
 
 | Componente        | Versão | Papel                               |
 | ----------------- | ------ | ----------------------------------- |
@@ -53,7 +53,7 @@ Grafana → dashboards (metrics + logs + traces)
 
 ---
 
-# 📍 **4. Estrutura do Projeto**
+#  **4. Estrutura do Projeto**
 
 ```
 /src
@@ -71,7 +71,7 @@ docker-compose.yml
 
 ---
 
-# 📍 **5. Instrumentação da Aplicação**
+#  **5. Instrumentação da Aplicação**
 
 A API foi instrumentada completamente.
 
@@ -119,7 +119,7 @@ client.collectDefaultMetrics({
 });
 ```
 
-🔎 **Visão operacional completa de CPU, memória, FD, heap, event-loop e latências.**
+**Visão operacional completa de CPU, memória, FD, heap, event-loop e latências.**
 
 ---
 
@@ -141,7 +141,7 @@ Todos enviados via OTLP → OTEL Collector → Jaeger.
 
 ---
 
-# 📍 **6. Stack de Observabilidade**
+#  **6. Stack de Observabilidade**
 
 ### **6.1 Prometheus**
 
@@ -201,7 +201,7 @@ Criados 2 dashboards:
 
 ---
 
-# 📍 **7. Dashboards Criados**
+#  **7. Dashboards Criados**
 
 ### **Dashboard 1 — Saúde do Serviço**
 
@@ -233,7 +233,7 @@ Inclui:
 
 ---
 
-# 📍 **8. Testes de Carga**
+#  **8. Testes de Carga**
 
 Foi construído um script simples:
 
@@ -250,9 +250,7 @@ Isso fez as métricas popularem os gráficos em tempo real.
 
 ---
 
-# 📍 **9. Troubleshooting Realizado (importante para avaliação)**
-
-Aqui está a parte que mostra **senioridade técnica**, mesmo sendo vaga júnior.
+#  **9. Troubleshooting Realizado 
 
 ---
 
@@ -329,7 +327,7 @@ O Collector mostrava:
 
 ---
 
-# 📍 **10. Entregas Finalizadas do Desafio**
+#  **10. Entregas Finalizadas do Desafio**
 
 ✔ Instrumentação da aplicação
 ✔ Tracing distribuído
@@ -345,7 +343,7 @@ O Collector mostrava:
 
 ---
 
-# 📍 **11. Pontos Pendentes / Limitados (explicados tecnicamente)**
+#  **11. Pontos Pendentes / Limitados (explicados tecnicamente)**
 
 ### ❌ Envio de logs via OTEL Collector
 
@@ -362,13 +360,12 @@ Pino não injeta automaticamente — exige middleware extra.
 
 ---
 
-# 📍 **12. Conclusão**
+#  **12. Conclusão**
 
 Este projeto demonstra:
 
-* Capacidade de diagnosticar problemas complexos
-* Conhecimento de toda a stack de observabilidade moderna
-* Entendimento profundo de tracing, métricas e logs
+* Capacidade de diagnosticar problemas
+* Conhecimento da stack de observabilidade
 * Habilidade prática com Docker e troubleshooting
 * Senso de engenharia de plataforma: visibilidade, saúde e operação
 
